@@ -1,6 +1,7 @@
 import requests
 import schedule
 import time
+import sqlite3
 from datetime import datetime, timedelta
 from discord_webhook import DiscordWebhook
 
@@ -12,28 +13,30 @@ twitch_client_id = ""
 twitch_client_secret = ""
 twitch_game_id = ""
 twitch_max_streams = 100
-twitch_oauth_token = ""
 twitch_recheck_time = 600
 twitch_token_renewal_days = 21
 
-def load_announced_users(filename):
+# Initialize SQLite database
+conn = sqlite3.connect('announced_users.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS announced_users
+             (username TEXT PRIMARY KEY, last_announcement_time TEXT)''')
+conn.commit()
+
+def load_announced_users():
     announced_users = {}
-    try:
-        with open(filename, 'r') as file:
-            for line in file:
-                parts = line.strip().split(',')
-                if len(parts) == 2:
-                    username, last_announcement_time = parts
-                    last_announcement_time = datetime.fromisoformat(last_announcement_time)
-                    announced_users[username] = last_announcement_time
-    except FileNotFoundError:
-        pass
+    c.execute('SELECT * FROM announced_users')
+    rows = c.fetchall()
+    for row in rows:
+        username, last_announcement_time = row
+        last_announcement_time = datetime.fromisoformat(last_announcement_time)
+        announced_users[username] = last_announcement_time
     return announced_users
 
-def save_announced_users(filename, announced_users):
-    with open(filename, 'w') as file:
-        for username, last_announcement_time in announced_users.items():
-            file.write(f"{username},{last_announcement_time.isoformat()}\n")
+def save_announced_user(username, last_announcement_time):
+    c.execute('INSERT OR REPLACE INTO announced_users (username, last_announcement_time) VALUES (?, ?)',
+              (username, last_announcement_time.isoformat()))
+    conn.commit()
 
 def get_app_access_token(client_id, client_secret):
     url = "https://id.twitch.tv/oauth2/token"
@@ -53,24 +56,22 @@ def get_app_access_token(client_id, client_secret):
         return None
 
 def renew_access_token():
-    global twitch_oauth_token
-    print("Renewing Twitch OAuth token...")
     twitch_oauth_token = get_app_access_token(twitch_client_id, twitch_client_secret)
     if twitch_oauth_token:
         print("Twitch OAuth token renewed successfully.")
+        return twitch_oauth_token
     else:
         print("Failed to obtain Twitch OAuth token. Cannot proceed.")
-        
+        return None
+
 def check_for_new_users():
-    announced_users = load_announced_users("announced_users.txt")
+    announced_users = load_announced_users()
     new_users = set()
 
-    global twitch_oauth_token
-    if not twitch_oauth_token:
-        renew_access_token()
-        if not twitch_oauth_token:
-            print("Failed to obtain Twitch OAuth token. Cannot proceed.")
-            return
+    twitch_oauth_token = renew_access_token()
+    if twitch_oauth_token is None:
+        print("Failed to renew Twitch OAuth token. Cannot proceed.")
+        return
 
     url = "https://api.twitch.tv/helix/streams"
     params = {
@@ -91,22 +92,20 @@ def check_for_new_users():
             last_announcement_time = announced_users.get(user_login)
             if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=1):
                 new_users.add(user_login)
-                announced_users[user_login] = now
+                save_announced_user(user_login, now)
 
         for user in new_users:
             print(f"Announcing {user} via Discord webhook...")
-            webhook = DiscordWebhook(url=discord_webhook_url, content=f"{user} is now streaming {game_name} on Twitch! https://twitch.tv/{user}")
+            webhook = DiscordWebhook(url=discord_webhook_url,
+                                     content=f"{user} is now streaming {game_name} on Twitch! https://twitch.tv/{user}")
             webhook.execute()
             time.sleep(discord_webhook_delay)
-
-        save_announced_users("announced_users.txt", announced_users)
     else:
         print(f"Request failed with status code: {response.status_code}")
         if "error" in response.json():
             print(response.json()["error"])
 
 if __name__ == "__main__":
-
     schedule.every(twitch_token_renewal_days).days.do(renew_access_token)
 
     while True:
