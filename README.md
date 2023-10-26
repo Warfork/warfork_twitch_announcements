@@ -6,8 +6,7 @@ Before you start, make sure you have the following:
 
 - Twitch Developer Application with client_id and client_secret
 - Discord Webhook URL
-
-Python 3
+- Python 3
 
 Required Python packages:
 
