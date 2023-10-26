@@ -1,3 +1,5 @@
+## warfork_twitch_announcements
+
 This Python script periodically checks for new streamers on Twitch who are playing a specific game and announces them via a Discord webhook.
 
 ## Prerequisites
@@ -10,9 +12,14 @@ Before you start, make sure you have the following:
 
 Required Python packages:
 
-- requests
+- aiohttp
 - schedule
+- aiosqlite
 - discord-webhook
+
+You can install the required packages with the following command:
+
+- pip install aiohttp schedule aiosqlite discord-webhook
 
 ## Configuration
 
@@ -23,6 +30,5 @@ Required Python packages:
 - twitch_client_secret: Your Twitch Developer Application client secret.
 - twitch_game_id: The Twitch Game ID for the game you want to track.
 - twitch_max_streams: The maximum number of streams to retrieve from Twitch.
-- twitch_oauth_token: OAuth token for Twitch (initially empty).
 - twitch_recheck_time: Time in seconds between checks for new users.
 - twitch_token_renewal_days: How often the Twitch OAuth token should be renewed.
