@@ -5,18 +5,19 @@ import time
 import aiosqlite
 from datetime import datetime, timedelta
 from discord_webhook import DiscordWebhook
+import json
 
 class TwitchStreamAnnouncer:
-    def __init__(self):
-        self.discord_webhook_url = ""
-        self.discord_webhook_delay = 5
-        self.game_name = ""
-        self.twitch_client_id = ""
-        self.twitch_client_secret = ""
-        self.twitch_game_id = ""
-        self.twitch_max_streams = 100
-        self.twitch_recheck_time = 600
-        self.twitch_token_renewal_days = 21
+    def __init__(self, config):
+        self.discord_webhook_url = config["discord_webhook_url"]
+        self.discord_webhook_delay = config["discord_webhook_delay"]
+        self.game_name = config["game_name"]
+        self.twitch_client_id = config["twitch_client_id"]
+        self.twitch_client_secret = config["twitch_client_secret"]
+        self.twitch_game_id = config["twitch_game_id"]
+        self.twitch_max_streams = config["twitch_max_streams"]
+        self.twitch_recheck_time = config["twitch_recheck_time"]
+        self.twitch_token_renewal_days = config["twitch_token_renewal_days"]
         self.session = None
 
     async def setup_session(self):
@@ -123,7 +124,13 @@ class TwitchStreamAnnouncer:
             print(f"Waiting for {self.twitch_recheck_time} seconds before the next check...")
             await asyncio.sleep(self.twitch_recheck_time)
 
+def load_config():
+    with open('twitch_config.json', 'r') as config_file:
+        config = json.load(config_file)
+    return config
+
 if __name__ == "__main__":
-    announcer = TwitchStreamAnnouncer()
+    config = load_config()  # Load configuration from the config file
+    announcer = TwitchStreamAnnouncer(config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(announcer.main())
