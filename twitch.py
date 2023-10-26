@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import schedule
 import time
-import sqlite3
+import aiosqlite
 from datetime import datetime, timedelta
 from discord_webhook import DiscordWebhook
 
@@ -18,16 +18,17 @@ class TwitchStreamAnnouncer:
         self.twitch_recheck_time = 600
         self.twitch_token_renewal_days = 21
 
-        self.conn = sqlite3.connect('announced_users.db')
-        self.c = self.conn.cursor()
-        self.c.execute('''CREATE TABLE IF NOT EXISTS announced_users
-                          (username TEXT PRIMARY KEY, last_announcement_time TEXT)''')
-        self.conn.commit()
+    async def setup_database(self):
+        self.conn = await aiosqlite.connect('announced_users.db')
+        self.c = await self.conn.cursor()
+        await self.c.execute('''CREATE TABLE IF NOT EXISTS announced_users
+                               (username TEXT PRIMARY KEY, last_announcement_time TEXT)''')
+        await self.conn.commit()
 
     async def load_announced_users(self):
         announced_users = {}
-        self.c.execute('SELECT * FROM announced_users')
-        rows = self.c.fetchall()
+        await self.c.execute('SELECT * FROM announced_users')
+        rows = await self.c.fetchall()
         for row in rows:
             username, last_announcement_time = row
             last_announcement_time = datetime.fromisoformat(last_announcement_time)
@@ -35,9 +36,9 @@ class TwitchStreamAnnouncer:
         return announced_users
 
     async def save_announced_user(self, username, last_announcement_time):
-        self.c.execute('INSERT OR REPLACE INTO announced_users (username, last_announcement_time) VALUES (?, ?)',
+        await self.c.execute('INSERT OR REPLACE INTO announced_users (username, last_announcement_time) VALUES (?, ?)',
                        (username, last_announcement_time.isoformat()))
-        self.conn.commit()
+        await self.conn.commit()
 
     async def get_app_access_token(self, client_id, client_secret):
         url = "https://id.twitch.tv/oauth2/token"
@@ -108,6 +109,7 @@ class TwitchStreamAnnouncer:
                         print(response.json()["error"])
 
     async def main(self):
+        await self.setup_database()
         while True:
             print("Checking for new users...")
             await self.check_for_new_users()
