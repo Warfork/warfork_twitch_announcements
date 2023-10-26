@@ -98,7 +98,7 @@ class TwitchStreamAnnouncer:
                 for stream in data.get("data", []):
                     user_login = stream.get('user_login')
                     last_announcement_time = announced_users.get(user_login)
-                    if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=1):
+                    if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=2):
                         new_users.add(user_login)
                         await self.save_announced_user(user_login, now)
 
