@@ -14,7 +14,7 @@ twitch_game_id = ""
 twitch_max_streams = 100
 twitch_oauth_token = ""
 twitch_recheck_time = 600
-twitch_token_renewal_days = 28
+twitch_token_renewal_days = 21
 
 def load_announced_users(filename):
     announced_users = {}
