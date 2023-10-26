@@ -21,7 +21,9 @@ You can install the required packages with the following command:
 
 - pip install aiohttp schedule aiosqlite discord-webhook
 
-## Configuration
+## Configuration 
+
+Ensure these parameters are correctly set in the twitch_config.json file.
 
 - discord_webhook_url: Your Discord webhook URL where announcements will be sent.
 - discord_webhook_delay: Delay in seconds between announcing new users (e.g., 5 seconds).
@@ -30,5 +32,6 @@ You can install the required packages with the following command:
 - twitch_client_secret: Your Twitch Developer Application client secret.
 - twitch_game_id: The Twitch Game ID for the game you want to track.
 - twitch_max_streams: The maximum number of streams to retrieve from Twitch.
-- twitch_recheck_time: Time in seconds between checks for new users.
+- twitch_recheck_seconds: Time in seconds between checks for new users.
 - twitch_token_renewal_days: How often the Twitch OAuth token should be renewed.
+- twitch_streamer_cooldown_hours: Cooldown period in hours before announcing the same streamer again.
