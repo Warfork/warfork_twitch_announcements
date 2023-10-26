@@ -3,11 +3,17 @@ import time
 from datetime import datetime, timedelta
 from discord_webhook import DiscordWebhook
 
-# Credentials
-oauth_token = ""
-game_name = ""
-game_id = ""
+# Settings
+
 discord_webhook_url = ""
+discord_webhook_delay = "5"
+game_name = ""
+twitch_client_id = ""
+twitch_client_secret = ""
+twitch_game_id = ""
+twitch_max_streams = "100"
+twitch_recheck_time = "600"
+twitch_oauth_token = ""
 
 def load_announced_users(filename):
     announced_users = {}
@@ -34,12 +40,12 @@ def check_for_new_users():
 
     url = "https://api.twitch.tv/helix/streams"
     params = {
-        "game_id": game_id,
-        "first": 100  # Max Streams
+        "game_id": twitch_game_id,
+        "first": twitch_max_streams
     }
     headers = {
-        "Client-ID": "",  # Twitch API client ID
-        "Authorization": f"Bearer {oauth_token}"
+        "Client-ID": twitch_client_id,
+        "Authorization": f"Bearer {twitch_oauth_token}"
     }
     response = requests.get(url, params=params, headers=headers)
 
@@ -56,7 +62,7 @@ def check_for_new_users():
         for user in new_users:
             webhook = DiscordWebhook(url=discord_webhook_url, content=f"{user} is now streaming {game_name} on Twitch! https://twitch.tv/{user}")
             webhook.execute()
-            time.sleep(5) # 5 second delay between messages
+            time.sleep(discord_webhook_delay)
 
         save_announced_users("announced_users.txt", announced_users)
     else:
@@ -67,5 +73,5 @@ def check_for_new_users():
 if __name__ == "__main__":
     while True:
         check_for_new_users()
-        time.sleep(600) # Check every 600 seconds
+        time.sleep(twitch_recheck_time)
 
