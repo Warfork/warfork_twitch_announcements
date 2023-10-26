@@ -17,6 +17,13 @@ class TwitchStreamAnnouncer:
         self.twitch_max_streams = 100
         self.twitch_recheck_time = 600
         self.twitch_token_renewal_days = 21
+        self.session = None
+
+    async def setup_session(self):
+        self.session = aiohttp.ClientSession()
+
+    async def close_session(self):
+        await self.session.close()
 
     async def setup_database(self):
         self.conn = await aiosqlite.connect('announced_users.db')
@@ -48,14 +55,13 @@ class TwitchStreamAnnouncer:
             "grant_type": "client_credentials"
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("access_token")
-                else:
-                    print(f"Failed to obtain access token. Status code: {response.status}")
-                    return None
+        async with self.session.post(url, params=params) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data.get("access_token")
+            else:
+                print(f"Failed to obtain access token. Status code: {response.status}")
+                return None
 
     async def renew_access_token(self):
         twitch_oauth_token = await self.get_app_access_token(self.twitch_client_id, self.twitch_client_secret)
@@ -85,30 +91,30 @@ class TwitchStreamAnnouncer:
             "Authorization": f"Bearer {twitch_oauth_token}"
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    now = datetime.now()
-                    for stream in data.get("data", []):
-                        user_login = stream.get('user_login')
-                        last_announcement_time = announced_users.get(user_login)
-                        if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=1):
-                            new_users.add(user_login)
-                            await self.save_announced_user(user_login, now)
+        async with self.session.get(url, params=params, headers=headers) as response:
+            if response.status == 200:
+                data = await response.json()
+                now = datetime.now()
+                for stream in data.get("data", []):
+                    user_login = stream.get('user_login')
+                    last_announcement_time = announced_users.get(user_login)
+                    if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=1):
+                        new_users.add(user_login)
+                        await self.save_announced_user(user_login, now)
 
-                    for user in new_users:
-                        print(f"Announcing {user} via Discord webhook...")
-                        webhook = DiscordWebhook(url=self.discord_webhook_url,
-                                                 content=f"{user} is now streaming {self.game_name} on Twitch! https://twitch.tv/{user}")
-                        webhook.execute()
-                        await asyncio.sleep(self.discord_webhook_delay)
-                else:
-                    print(f"Request failed with status code: {response.status}")
-                    if "error" in response.json():
-                        print(response.json()["error"])
+                for user in new_users:
+                    print(f"Announcing {user} via Discord webhook...")
+                    webhook = DiscordWebhook(url=self.discord_webhook_url,
+                                             content=f"{user} is now streaming {self.game_name} on Twitch! https://twitch.tv/{user}")
+                    webhook.execute()
+                    await asyncio.sleep(self.discord_webhook_delay)
+            else:
+                print(f"Request failed with status code: {response.status}")
+                if "error" in response.json():
+                    print(response.json()["error"])
 
     async def main(self):
+        await self.setup_session()
         await self.setup_database()
         while True:
             print("Checking for new users...")
