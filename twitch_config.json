@@ -7,5 +7,6 @@
     "twitch_game_id": "",
     "twitch_max_streams": 100,
     "twitch_recheck_time": 600,
-    "twitch_token_renewal_days": 21
+    "twitch_token_renewal_days": 21,
+    "twitch_streamer_cooldown_hours": 2
 }

@@ -18,6 +18,7 @@ class TwitchStreamAnnouncer:
         self.twitch_max_streams = config["twitch_max_streams"]
         self.twitch_recheck_time = config["twitch_recheck_time"]
         self.twitch_token_renewal_days = config["twitch_token_renewal_days"]
+        self.twitch_streamer_cooldown_hours = config["twitch_streamer_cooldown_hours"]
         self.session = None
 
     async def setup_session(self):
@@ -96,10 +97,12 @@ class TwitchStreamAnnouncer:
             if response.status == 200:
                 data = await response.json()
                 now = datetime.now()
+                cooldown_hours = self.twitch_streamer_cooldown_hours
+
                 for stream in data.get("data", []):
                     user_login = stream.get('user_login')
                     last_announcement_time = announced_users.get(user_login)
-                    if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=2):
+                    if last_announcement_time is None or (now - last_announcement_time) >= timedelta(hours=cooldown_hours):
                         new_users.add(user_login)
                         await self.save_announced_user(user_login, now)
 
@@ -111,8 +114,8 @@ class TwitchStreamAnnouncer:
                     await asyncio.sleep(self.discord_webhook_delay)
             else:
                 print(f"Request failed with status code: {response.status}")
-                if "error" in response.json():
-                    print(response.json()["error"])
+                if "error" in await response.json():
+                    print((await response.json())["error"])
 
     async def main(self):
         await self.setup_session()
@@ -130,7 +133,7 @@ def load_config():
     return config
 
 if __name__ == "__main__":
-    config = load_config()  # Load configuration from the config file
+    config = load_config()
     announcer = TwitchStreamAnnouncer(config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(announcer.main())
