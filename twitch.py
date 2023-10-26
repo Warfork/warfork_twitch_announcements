@@ -16,7 +16,7 @@ class TwitchStreamAnnouncer:
         self.twitch_client_secret = config["twitch_client_secret"]
         self.twitch_game_id = config["twitch_game_id"]
         self.twitch_max_streams = config["twitch_max_streams"]
-        self.twitch_recheck_time = config["twitch_recheck_time"]
+        self.twitch_recheck_seconds = config["twitch_recheck_seconds"]
         self.twitch_token_renewal_days = config["twitch_token_renewal_days"]
         self.twitch_streamer_cooldown_hours = config["twitch_streamer_cooldown_hours"]
         self.session = None
@@ -124,8 +124,8 @@ class TwitchStreamAnnouncer:
             print("Checking for new users...")
             await self.check_for_new_users()
             schedule.run_pending()
-            print(f"Waiting for {self.twitch_recheck_time} seconds before the next check...")
-            await asyncio.sleep(self.twitch_recheck_time)
+            print(f"Waiting for {self.twitch_recheck_seconds} seconds before the next check...")
+            await asyncio.sleep(self.twitch_recheck_seconds)
 
 def load_config():
     with open('twitch_config.json', 'r') as config_file:
