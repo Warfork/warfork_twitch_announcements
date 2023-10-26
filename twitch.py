@@ -5,7 +5,8 @@ from discord_webhook import DiscordWebhook
 
 # Credentials
 oauth_token = ""
-game_name = "Warfork"
+game_name = ""
+game_id = ""
 discord_webhook_url = ""
 
 def load_announced_users(filename):
@@ -33,7 +34,7 @@ def check_for_new_users():
 
     url = "https://api.twitch.tv/helix/streams"
     params = {
-        "game_name": game_name,
+        "game_id": game_id,
         "first": 100  # Max Streams
     }
     headers = {
@@ -53,7 +54,7 @@ def check_for_new_users():
                 announced_users[user_login] = now
 
         for user in new_users:
-            webhook = DiscordWebhook(url=discord_webhook_url, content=f"{user} is now streaming Warfork on Twitch! https://twitch.tv/{user}")
+            webhook = DiscordWebhook(url=discord_webhook_url, content=f"{user} is now streaming {game_name} on Twitch! https://twitch.tv/{user}")
             webhook.execute()
             time.sleep(5) # 5 second delay between messages
 
