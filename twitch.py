@@ -54,8 +54,13 @@ def get_app_access_token(client_id, client_secret):
 
 def renew_access_token():
     global twitch_oauth_token
+    print("Renewing Twitch OAuth token...")
     twitch_oauth_token = get_app_access_token(twitch_client_id, twitch_client_secret)
-
+    if twitch_oauth_token:
+        print("Twitch OAuth token renewed successfully.")
+    else:
+        print("Failed to obtain Twitch OAuth token. Cannot proceed.")
+        
 def check_for_new_users():
     announced_users = load_announced_users("announced_users.txt")
     new_users = set()
@@ -89,6 +94,7 @@ def check_for_new_users():
                 announced_users[user_login] = now
 
         for user in new_users:
+            print(f"Announcing {user} via Discord webhook...")
             webhook = DiscordWebhook(url=discord_webhook_url, content=f"{user} is now streaming {game_name} on Twitch! https://twitch.tv/{user}")
             webhook.execute()
             time.sleep(discord_webhook_delay)
@@ -104,7 +110,8 @@ if __name__ == "__main__":
     schedule.every(twitch_token_renewal_days).days.do(renew_access_token)
 
     while True:
-
+        print("Checking for new users...")
         check_for_new_users()
         schedule.run_pending()
+        print(f"Waiting for {twitch_recheck_time} seconds before the next check...")
         time.sleep(twitch_recheck_time)
