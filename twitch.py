@@ -8,7 +8,6 @@ import json
 DATABASE_NAME = 'announced_users.db'
 CONFIG_FILE = 'twitch_config.json'
 
-
 class TwitchStreamAnnouncer:
     def __init__(self, config):
         self.config = config
