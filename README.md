@@ -20,8 +20,7 @@ You will need to install the following Python packages using pip:
 
 You can install these packages using the following command:
 
-```bash
-pip install aiohttp aiosqlite discord-webhook```
+- **pip install aiohttp aiosqlite discord-webhook**
 
 ### Configuration
 
